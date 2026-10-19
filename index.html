@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjaga Ekosistem Sawah</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-light: #4caf50;
+            --primary-dark: #1b5e20;
+            --bg-color: #f1f8e9;
+            --card-bg: #ffffff;
+            --text-dark: #1a1a1a;
+            --error-bg: #ffebee;
+            --error-text: #b71c1c;
+            --success-bg: #e8f5e9;
+            --success-text: #1b5e20;
+            --accent: #fbc02d;
+            --gray-light: #e0e0e0;
+            --gray-dark: #616161;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            font-size: 18px; /* Ramah untuk SD kelas 5 */
+            line-height: 1.6;
+        }
+
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            padding: 20px;
+            flex-grow: 1;
+            padding-bottom: 80px;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .progress-container {
+            width: 150px;
+            height: 24px;
+            background-color: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--primary-light);
+            position: relative;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent);
+            width: 40%;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0; left: 0;
+            font-size: 14px;
+            color: var(--text-dark);
+            line-height: 24px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            min-height: 48px; /* Standar layar sentuh */
+            transition: transform 0.1s, background-color 0.2s;
+            text-align: center;
+            display: inline-block;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled {
+            background-color: var(--gray-light);
+            color: var(--gray-dark);
+            cursor: not-allowed;
+        }
+        .btn-hint {
+            background-color: var(--accent);
+            color: var(--text-dark);
+        }
+
+        h1, h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
+        p { margin-bottom: 15px; }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .item-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            min-height: 70px;
+            padding: 15px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 12px;
+            border: 2px dashed var(--gray-dark);
+        }
+
+        .draggable-item {
+            background: white;
+            border: 2px solid var(--primary-light);
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-height: 48px; /* Sentuh ramah */
+            font-size: 16px;
+        }
+        .draggable-item.selected {
+            border-color: var(--accent);
+            background-color: #fffde7;
+            box-shadow: 0 0 0 4px rgba(251, 192, 45, 0.4);
+            transform: scale(1.05);
+        }
+
+        .zone-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 600px) { .zone-container { grid-template-columns: 1fr; } }
+        
+        .drop-zone {
+            background: var(--card-bg);
+            border: 3px dashed var(--gray-dark);
+            border-radius: 12px;
+            padding: 15px;
+            min-height: 200px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .drop-zone.highlight { border-color: var(--accent); background-color: #fffde7; }
+        .zone-title { width: 100%; text-align: center; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid var(--gray-light); padding-bottom: 5px; font-size: 20px; }
+
+        .chain-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid var(--gray-light);
+        }
+        .chain-slot {
+            width: 140px;
+            min-height: 50px;
+            border: 2px dashed var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: #fafafa;
+        }
+        .chain-slot.highlight { border-color: var(--accent); background-color: #fffde7; }
+        .arrow { font-weight: bold; color: var(--primary); font-size: 24px; }
+        .fixed-item { background: var(--gray-light); border: 2px solid var(--gray-dark); border-radius: 8px; padding: 10px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; min-height: 48px; }
+
+        .slider-container { background: var(--card-bg); padding: 20px; border-radius: 12px; text-align: center; border: 2px solid var(--gray-light); margin-bottom: 20px; }
+        input[type=range] { width: 100%; margin: 15px 0; height: 40px; cursor: pointer; }
+        
+        .chart-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 220px;
+            background: var(--card-bg);
+            padding: 20px 10px 10px 10px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid var(--gray-light);
+        }
+        .bar-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 30%; height: 100%; justify-content: flex-end; }
+        .bar {
+            width: 50px;
+            background-color: var(--primary);
+            border-radius: 6px 6px 0 0;
+            transition: height 0.3s ease, background-color 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            padding-bottom: 5px;
+        }
+        
+        .options-grid { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn { background: white; border: 2px solid var(--primary); padding: 15px; border-radius: 8px; text-align: left; font-size: 18px; cursor: pointer; transition: all 0.2s; min-height: 48px; }
+        .option-btn:hover, .option-btn.selected { background: var(--primary-light); color: white; border-color: var(--primary-dark); }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .action-grid { grid-template-columns: 1fr; } }
+        
+        .action-item {
+            background: white; border: 2px solid var(--gray-light); border-radius: 8px; padding: 15px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: bold; min-height: 60px;
+        }
+        .action-item.selected { border-color: var(--primary); background-color: var(--success-bg); }
+        .action-item input { width: 24px; height: 24px; pointer-events: none; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 4px solid var(--primary);
+        }
+        .modal-icon { font-size: 50px; margin-bottom: 15px; }
+        .hint-box { background: #fffde7; padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); text-align: left; margin: 15px 0; font-size: 18px; }
+
+        .mission-btn {
+            display: flex; justify-content: space-between; align-items: center; padding: 20px; background: white; border: 3px solid var(--primary); border-radius: 12px; font-size: 20px; font-weight: bold; cursor: pointer; color: var(--primary-dark); margin-bottom: 15px;
+        }
+        .mission-btn.locked { background: var(--gray-light); border-color: var(--gray-dark); color: var(--gray-dark); cursor: not-allowed; }
+        .badge-display { font-size: 28px; }
+        
+        .end-badges { display: flex; justify-content: center; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
+        .badge-card { background: white; padding: 15px; border-radius: 12px; text-align: center; border: 2px solid var(--accent); width: 140px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .badge-card span { font-size: 45px; display: block; margin-bottom: 5px; }
+        .controls-row { display: flex; justify-content: space-between; margin-top: 25px; gap: 10px; flex-wrap: wrap; }
+        /* Penyesuaian untuk area sematan Moodle dan layar kecil. */
+        html { overflow-wrap: anywhere; }
+        .modal-content { max-height: calc(100vh - 40px); overflow-y: auto; }
+        .mission-btn { width: 100%; gap: 12px; text-align: left; }
+        @media (max-width: 480px) {
+            .screen { padding: 12px; padding-bottom: 40px; }
+            .card { padding: 14px; }
+            header { padding: 10px 12px; }
+            .modal-content { padding: 18px; }
+            .chain-row { padding: 10px; gap: 6px; }
+            .chain-slot { width: 115px; }
+            .draggable-item { padding: 8px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header id="hud" style="display: none;">
+        <div class="hud-item">
+            <span>⭐ Poin:</span>
+            <span id="scoreDisplay" style="font-size: 22px;">0</span>
+        </div>
+        <div class="hud-item">
+            <span title="Keseimbangan Ekosistem">⚖️ Keseimbangan:</span>
+            <div class="progress-container">
+                <div class="progress-bar" id="balanceBar"></div>
+                <div class="progress-text" id="balanceText">40%</div>
+            </div>
+        </div>
+        <div class="hud-item" id="badgeContainerHeader">
+            <!-- Tempat Lencana Muncul -->
+        </div>
+    </header>
+
+    <section id="screen-intro" class="screen active">
+        <div class="card" style="text-align: center; margin-top: 2vh; border: 3px solid var(--primary);">
+            <h1 style="font-size: 32px; color: var(--primary-dark);">🌾 Penjaga Ekosistem Sawah 🌾</h1>
+            <p style="font-size: 20px; text-align: left;">
+                Menjelang musim panen, sawah di Desa Sukamaju terganggu keseimbangannya! Hama mulai menyerang dan panen warga terancam gagal.
+            </p>
+            <p style="font-size: 20px; text-align: left;">
+                Tugasmu sebagai <strong>Penjaga Ekosistem</strong> adalah memulihkan keseimbangan sawah ini kembali menjadi 100%. Selesaikan empat misi untuk menyelamatkan desa!
+            </p>
+            
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; border: 2px solid #64b5f6;">
+                <strong style="color: #0d47a1; font-size: 22px;">🎯 Tujuan Petualangan Kita:</strong>
+                <ul style="padding-left: 25px; margin-top: 10px; color: #0d47a1; font-size: 18px; line-height: 1.8;">
+                    <li>🔎 Mengenali makhluk hidup dan benda tak hidup di sawah.</li>
+                    <li>🔗 Menyusun urutan rantai makanan.</li>
+                    <li>🔮 Memperkirakan akibat jika salah satu makhluk hidup berkurang atau bertambah.</li>
+                    <li>🛡️ Menemukan cara terbaik untuk menjaga keseimbangan alam.</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--success-bg); padding: 15px; border-radius: 8px; margin: 20px 0; text-align: left; border-left: 5px solid var(--primary);">
+                <strong>🎮 Petunjuk Bermain:</strong><br>
+                👆 Ketuk sebuah kartu untuk memilihnya (warna akan menguning), lalu ketuk kotak kosong atau peti untuk meletakkannya.
+            </div>
+            
+            <button class="btn" onclick="startGame()" style="width: 100%; font-size: 24px; padding: 15px;">Mulai Petualangan 🚀</button>
+        </div>
+    </section>
+
+    <section id="screen-map" class="screen">
+        <h2>🗺️ Peta Misi Penyelamatan</h2>
+        <p>Pilih misi yang tersedia. Misi selanjutnya otomatis terbuka jika kamu menyelesaikan misi sebelumnya.</p>
+        <div>
+            <button class="mission-btn" id="btn-m1" onclick="startMission(1)">
+                <span>Misi 1: Kenali Penghuni Sawah</span>
+                <span class="badge-display" id="status-m1">▶️</span>
+            </button>
+            <button class="mission-btn locked" id="btn-m2" onclick="startMission(2)" disabled>
+                <span>Misi 2: Rantai Makanan</span>
+                <span class="badge-display" id="status-m2">🔒</span>
+            </button>
+            <button class="mission-btn locked" id="btn-m3" onclick="startMission(3)" disabled>
+                <span>Misi 3: Ramalkan Dampaknya</span>
+                <span class="badge-display" id="status-m3">🔒</span>
+            </button>
+            <button class="mission-btn locked" id="btn-m4" onclick="startMission(4)" disabled>
+                <span>Misi 4: Pulihkan Ekosistem</span>
+                <span class="badge-display" id="status-m4">🔒</span>
+            </button>
+        </div>
+    </section>
+
+    <section id="screen-m1" class="screen">
+        <h2>Misi 1: Kenali Penghuni Sawah 🔎</h2>
+        <p>Pilah kartu di bawah ini ke dalam peti <strong>BIOTIK</strong> (makhluk hidup) dan <strong>ABIOTIK</strong> (benda tak hidup). Lulus jika minimal 10 kartu tepat.</p>
+        
+        <div class="item-pool" id="m1-pool" onclick="handleZoneTap('m1-pool')">
+            <!-- Kartu diinjeksi via JS -->
+        </div>
+
+        <div class="zone-container">
+            <div class="drop-zone" id="zone-biotik" onclick="handleZoneTap('zone-biotik')">
+                <div class="zone-title">🌱 Peti BIOTIK</div>
+            </div>
+            <div class="drop-zone" id="zone-abiotik" onclick="handleZoneTap('zone-abiotik')">
+                <div class="zone-title">🪨 Peti ABIOTIK</div>
+            </div>
+        </div>
+
+        <div class="controls-row">
+            <button class="btn btn-hint" onclick="showHint('Makhluk hidup (Biotik) butuh makan dan bernapas. Benda tak hidup (Abiotik) tidak bernapas tetapi sangat dibutuhkan.')">💡 Petunjuk</button>
+            <button class="btn" onclick="checkMission1()">Periksa Jawaban</button>
+        </div>
+    </section>
+
+    <section id="screen-m2" class="screen">
+        <h2>Misi 2: Sambungkan Rantai Makanan 🔗</h2>
+        <p>Susunlah tiga rantai makanan secara berurutan. Ingat, energi mengalir dari yang dimakan ke yang memakan.</p>
+        
+        <div class="item-pool" id="m2-pool" onclick="handleZoneTap('m2-pool')">
+            <!-- Kartu diinjeksi via JS -->
+        </div>
+
+        <div>
+            <!-- Rantai 1 -->
+            <div class="chain-row">
+                <div class="chain-slot" id="m2-c1-1" onclick="handleZoneTap('m2-c1-1')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c1-2" onclick="handleZoneTap('m2-c1-2')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c1-3" onclick="handleZoneTap('m2-c1-3')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c1-4" onclick="handleZoneTap('m2-c1-4')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c1-5" onclick="handleZoneTap('m2-c1-5')"></div>
+                <span class="arrow">→</span>
+                <div class="fixed-item">🦠 Pengurai</div>
+            </div>
+            <!-- Rantai 2 -->
+            <div class="chain-row">
+                <div class="chain-slot" id="m2-c2-1" onclick="handleZoneTap('m2-c2-1')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c2-2" onclick="handleZoneTap('m2-c2-2')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c2-3" onclick="handleZoneTap('m2-c2-3')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c2-4" onclick="handleZoneTap('m2-c2-4')"></div>
+                <span class="arrow">→</span>
+                <div class="fixed-item">🦠 Pengurai</div>
+            </div>
+            <!-- Rantai 3 -->
+            <div class="chain-row">
+                <div class="chain-slot" id="m2-c3-1" onclick="handleZoneTap('m2-c3-1')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c3-2" onclick="handleZoneTap('m2-c3-2')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c3-3" onclick="handleZoneTap('m2-c3-3')"></div>
+                <span class="arrow">→</span>
+                <div class="chain-slot" id="m2-c3-4" onclick="handleZoneTap('m2-c3-4')"></div>
+                <span class="arrow">→</span>
+                <div class="fixed-item">🦠 Pengurai</div>
+            </div>
+        </div>
+
+        <div class="controls-row">
+            <button class="btn btn-hint" onclick="showHint('Tumbuhan selalu berada di awal (produsen), kemudian dimakan hewan herbivora, lalu hewan karnivora.')">💡 Petunjuk</button>
+            <button class="btn" onclick="checkMission2()">Periksa Rantai</button>
+        </div>
+    </section>
+
+    <section id="screen-m3" class="screen">
+        <h2>Misi 3: Ramalkan Dampaknya 🔮</h2>
+        <p id="m3-progress" style="font-weight: bold; color: var(--primary);">Skenario 1 dari 4</p>
+        
+        <div class="card" style="border: 2px solid var(--primary-light);">
+            <h3 id="m3-scenario-title">Skenario A</h3>
+            <p id="m3-scenario-desc">Deskripsi skenario...</p>
+        </div>
+
+        <div class="slider-container">
+            <label style="font-weight:bold; font-size: 20px;">👈 Geser pengatur di bawah ini 👉</label>
+            <input type="range" id="m3-slider" min="10" max="90" value="50" oninput="updateChart()">
+        </div>
+
+        <div class="chart-container">
+            <div class="bar-wrapper">
+                <div class="bar" id="bar-cause" style="height: 50%;"></div>
+                <span id="label-cause" style="font-weight:bold; text-align: center;">Sebab</span>
+            </div>
+            <div class="bar-wrapper">
+                <div class="bar" id="bar-effect1" style="height: 50%; background-color:#e53935;"></div>
+                <span id="label-effect1" style="font-weight:bold; text-align: center;">Akibat 1</span>
+            </div>
+             <div class="bar-wrapper" id="wrapper-effect2">
+                <div class="bar" id="bar-effect2" style="height: 50%; background-color:#8e24aa;"></div>
+                <span id="label-effect2" style="font-weight:bold; text-align: center;">Akibat 2</span>
+            </div>
+        </div>
+
+        <p>Berdasarkan grafik di atas, apa yang akan terjadi selanjutnya?</p>
+        <div class="options-grid" id="m3-options">
+            <!-- Pilihan diinjeksi via JS -->
+        </div>
+
+        <div class="controls-row">
+            <button class="btn btn-hint" id="m3-hint-btn" onclick="showHintM3()">💡 Petunjuk</button>
+            <button class="btn" onclick="checkMission3()">Pilih Prediksi</button>
+        </div>
+    </section>
+
+    <section id="screen-m4" class="screen">
+        <div id="m4-part1">
+            <h2>Misi 4: Pulihkan Keseimbangan 🛡️</h2>
+            <p>Pilih tepat <strong>TIGA tindakan yang paling tepat</strong> untuk memulihkan ekosistem sawah tanpa merusak alam.</p>
+            
+            <div class="action-grid" id="m4-actions">
+                <!-- Pilihan Tindakan diinjeksi via JS -->
+            </div>
+            
+            <div class="controls-row">
+                <button class="btn btn-hint" onclick="showHint('Pilih tindakan yang menjaga kehidupan pemangsa alami dan tidak membasmi hewan dengan racun/bahan kimia.')">💡 Petunjuk</button>
+                <button class="btn" onclick="checkMission4Part1()">Lanjutkan</button>
+            </div>
+        </div>
+
+        <div id="m4-part2" style="display: none;">
+            <h2>Misi Terakhir!</h2>
+            <div class="card">
+                <h3 id="m4-reason-q">Mengapa melindungi ular sawah dan burung hantu itu sangat penting?</h3>
+                <div class="options-grid" id="m4-reasons">
+                    <!-- Alasan diinjeksi via JS -->
+                </div>
+            </div>
+            <div class="controls-row">
+                <button class="btn btn-outline" style="background: white; border: 2px solid var(--primary); color: var(--primary);" onclick="showModal('Petunjuk', 'Ingat apa makanan utama burung hantu dan ular di sawah.', false, 'Tutup')">💡 Petunjuk</button>
+                <button class="btn" onclick="checkMission4Part2()">Jawab</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-end" class="screen">
+        <div class="card" style="text-align: center; border: 4px solid var(--primary-dark);">
+            <h1 style="font-size: 36px;">🎉 Selamat, Sang Penjaga! 🎉</h1>
+            <p style="font-size: 20px;">Kamu telah berhasil memulihkan keseimbangan ekosistem sawah Desa Sukamaju kembali 100%.</p>
+            
+            <div style="font-size: 26px; margin: 20px 0; background: #fffde7; padding: 15px; border-radius: 8px;">
+                Total Poin: <strong style="color: var(--primary-dark);" id="final-score">0</strong>
+            </div>
+
+            <h3>Lencana Petualanganmu:</h3>
+            <div class="end-badges" id="final-badges">
+                <!-- Lencana -->
+            </div>
+
+            <div style="background: var(--bg-color); padding: 20px; border-radius: 12px; text-align: left; margin-bottom: 20px;">
+                <h3>📚 Ringkasan Ilmu Hari Ini:</h3>
+                <ul style="padding-left: 25px; margin-bottom: 15px; line-height: 1.6;">
+                    <li>Ekosistem sawah dibentuk oleh komponen <strong>biotik</strong> (makhluk hidup) dan <strong>abiotik</strong> (benda tak hidup).</li>
+                    <li>Rantai makanan adalah proses makan dan dimakan. Jika satu hewan punah, hewan lain akan terkena dampaknya secara berantai.</li>
+                    <li>Kita bisa menjaga alam dengan melindungi pemangsa alami dan tidak membuang limbah/racun sembarangan.</li>
+                </ul>
+                
+                <h3 style="color: #c62828;">🤔 Mari Berdiskusi bersama Guru:</h3>
+                <ol style="padding-left: 25px; font-style: italic;">
+                    <li>Apa yang akan terjadi pada hasil panen petani jika semua tikus dibasmi menggunakan racun kimia yang sangat kuat?</li>
+                    <li>Mengapa menjaga kebersihan saluran air sungai sangat penting bagi hewan-hewan di sawah?</li>
+                </ol>
+            </div>
+
+            <button class="btn" onclick="location.reload()" style="font-size: 22px; padding: 15px 30px;">🔄 Main Ulang</button>
+        </div>
+    </section>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modal-icon">✅</div>
+            <h2 id="modal-title" style="margin-bottom: 15px;">Judul</h2>
+            <div id="modal-text" style="font-size: 18px; margin-bottom: 25px; line-height: 1.5;">Teks pesan...</div>
+            <button class="btn" id="modal-btn" style="width: 100%;">Lanjut</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let points = 0;
+    let balance = 40;
+    let currentMission = 0;
+    let badges = [];
+    let attempts = 0;
+    let selectedItemElem = null;
+
+    /* Data Misi 1 */
+    const M1_ITEMS = [
+        { id: 'm1_padi', name: '🌾 Padi', type: 'Biotik' },
+        { id: 'm1_belalang', name: '🦗 Belalang', type: 'Biotik' },
+        { id: 'm1_tikus', name: '🐀 Tikus', type: 'Biotik' },
+        { id: 'm1_katak', name: '🐸 Katak', type: 'Biotik' },
+        { id: 'm1_ular', name: '🐍 Ular sawah', type: 'Biotik' },
+        { id: 'm1_elang', name: '🦅 Burung elang', type: 'Biotik' },
+        { id: 'm1_cacing', name: '🪱 Cacing tanah', type: 'Biotik' },
+        { id: 'm1_jamur', name: '🍄 Jamur', type: 'Biotik' },
+        { id: 'm1_air', name: '💧 Air', type: 'Abiotik' },
+        { id: 'm1_tanah', name: '🟤 Tanah', type: 'Abiotik' },
+        { id: 'm1_matahari', name: '☀️ Sinar matahari', type: 'Abiotik' },
+        { id: 'm1_udara', name: '💨 Udara', type: 'Abiotik' }
+    ];
+
+    /* Data Misi 2 */
+    const M2_ITEMS = [
+        { name: '🌾 Padi' }, { name: '🦗 Belalang' }, { name: '🐸 Katak' }, { name: '🐍 Ular sawah' }, { name: '🦅 Elang' },
+        { name: '🌾 Padi' }, { name: '🐀 Tikus' }, { name: '🐍 Ular sawah' }, { name: '🦅 Elang' },
+        { name: '🌿 Rumput' }, { name: '🦗 Belalang' }, { name: '🐦 Burung pipit' }, { name: '🦅 Elang' }
+    ];
+    
+    // Rantai 1: Padi -> belalang -> katak -> ular sawah -> elang
+    // Rantai 2: Padi -> tikus -> ular sawah -> elang
+    // Rantai 3: Rumput -> belalang -> burung pipit -> elang
+    const M2_EXPECTED = [
+        ['🌾 Padi', '🦗 Belalang', '🐸 Katak', '🐍 Ular sawah', '🦅 Elang'],
+        ['🌾 Padi', '🐀 Tikus', '🐍 Ular sawah', '🦅 Elang'],
+        ['🌿 Rumput', '🦗 Belalang', '🐦 Burung pipit', '🦅 Elang']
+    ];
+
+    /* Data Misi 3 */
+    let currentM3Scenario = 0;
+    let m3CorrectCount = 0;
+    const M3_SCENARIOS = [
+        {
+            title: "Skenario A: Perburuan Ular",
+            desc: "Ular sawah diburu habis oleh manusia. Geser pengatur ular ke kiri (menurun).",
+            causeLabel: "🐍 Ular",
+            effect1Label: "🐀 Tikus",
+            effect2Label: null,
+            relation1: 'inverse', // Ular turun = Tikus naik
+            options: [
+                "1. Tikus bertambah banyak dan merusak padi.",
+                "2. Padi makin subur karena tidak ada ular.",
+                "3. Burung elang tiba-tiba menjadi sangat banyak."
+            ],
+            correct: 0,
+            feedbackC: "Tepat. Ular sawah memangsa tikus, sehingga hilangnya ular membuat jumlah tikus meledak dan merusak padi.",
+            feedbackW: "Belum tepat. Coba perhatikan grafik. Jika ular tidak ada, hewan apa yang akan bebas berkembang biak karena tidak dimangsa?",
+            hint: "Ingat, makanan utama ular di sawah adalah tikus."
+        },
+        {
+            title: "Skenario B: Air Tercemar",
+            desc: "Saluran air tercemar limbah. Geser kualitas air ke kiri (memburuk) untuk melihat dampak berantai.",
+            causeLabel: "💧 Kualitas Air",
+            effect1Label: "🐸 Katak",
+            effect2Label: "🦗 Belalang",
+            relation1: 'direct', // Air memburuk = Katak mati (turun)
+            relation2: 'inverse', // Katak turun = Belalang naik
+            options: [
+                "1. Belalang berkurang karena tidak ada air.",
+                "2. Belalang bertambah banyak karena katak mati, lalu padi rusak.",
+                "3. Ular sawah langsung mati keracunan sebelum katak."
+            ],
+            correct: 1,
+            feedbackC: "Tepat. Katak membutuhkan air bersih. Katak mati berarti pemangsa belalang hilang, sehingga hama belalang merusak padi.",
+            feedbackW: "Belum tepat. Lihat grafik belalang yang naik. Jika katak mati, apa dampaknya terhadap padi yang dimakan belalang?",
+            hint: "Air yang kotor membunuh katak, padahal katak adalah pemakan belalang."
+        },
+        {
+            title: "Skenario C: Penebangan Pohon",
+            desc: "Pohon besar di tepi sawah ditebang. Geser jumlah pohon ke kiri (berkurang).",
+            causeLabel: "🌳 Pohon",
+            effect1Label: "🦅 Elang",
+            effect2Label: "🐀 Tikus",
+            relation1: 'direct', // Pohon hilang = Elang pergi
+            relation2: 'inverse', // Elang pergi = Tikus naik
+            options: [
+                "1. Katak akan bersembunyi di dalam tanah.",
+                "2. Tikus bertambah karena elang kehilangan tempat mengintai mangsa.",
+                "3. Padi gagal panen karena kekurangan cahaya matahari."
+            ],
+            correct: 1,
+            feedbackC: "Tepat. Elang butuh pohon tinggi untuk mengintai tikusnya. Tanpa elang, tikus berkembang pesat.",
+            feedbackW: "Belum tepat. Coba hubungkan antara pohon sebagai tempat tinggal elang dengan jumlah tikus di sawah.",
+            hint: "Elang bertengger di pohon tinggi untuk melihat tikus dari jauh."
+        },
+        {
+            title: "Skenario D: Pestisida Berlebih",
+            desc: "Pestisida disemprotkan sangat banyak ke tanah. Geser pestisida ke kanan (banyak).",
+            causeLabel: "☠️ Pestisida",
+            effect1Label: "🪱 Jamur & Cacing",
+            effect2Label: "🌱 Kesuburan",
+            relation1: 'inverse', // Pestisida naik = Pengurai turun
+            relation2: 'direct', // Pengurai turun = Kesuburan turun (karena pengurai bikin subur)
+            options: [
+                "1. Padi menjadi kebal terhadap segala hama penyakit.",
+                "2. Ular sawah berkembang biak dengan cepat.",
+                "3. Kesuburan tanah menurun karena cacing dan jamur mati keracunan."
+            ],
+            correct: 2,
+            feedbackC: "Tepat. Cacing dan jamur adalah pengurai yang menjaga tanah tetap subur. Racun kimia membunuh mereka.",
+            feedbackW: "Belum tepat. Pestisida kimia yang berlebihan meresap ke tanah. Makhluk apa yang hidup dan bertugas menyuburkan tanah?",
+            hint: "Cacing dan jamur sangat sensitif terhadap bahan kimia keras."
+        }
+    ];
+
+    /* Data Misi 4 */
+    const M4_ACTIONS = [
+        { text: "Melindungi ular sawah dan burung hantu", correct: true },
+        { text: "Menambah takaran pestisida kimia", correct: false },
+        { text: "Menjaga saluran air tetap bersih", correct: true },
+        { text: "Memburu seluruh tikus dengan racun kuat", correct: false },
+        { text: "Menanam kembali pohon di tepi sawah", correct: true },
+        { text: "Menutup saluran air agar tikus tidak masuk", correct: false },
+        { text: "Mengurangi penggunaan pestisida kimia", correct: true },
+        { text: "Menebang pohon yang tersisa di sekitar", correct: false }
+    ];
+
+    function showScreen(id) {
+        if (selectedItemElem) selectedItemElem.classList.remove('selected');
+        selectedItemElem = null;
+        removeHighlights();
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id !== 'screen-intro') document.getElementById('hud').style.display = 'flex';
+        window.scrollTo(0,0);
+    }
+
+    function updateHUD() {
+        document.getElementById('scoreDisplay').innerText = points;
+        document.getElementById('balanceBar').style.width = balance + '%';
+        document.getElementById('balanceText').innerText = balance + '%';
+        
+        const badgeCont = document.getElementById('badgeContainerHeader');
+        badgeCont.innerHTML = badges.map(b => `<span title="${b.name}" style="font-size: 24px; margin-left: 5px;">${b.icon}</span>`).join('');
+    }
+
+    function showModal(title, text, isError = false, btnText = "Lanjut", callback = null) {
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-title').style.color = isError ? 'var(--error-text)' : 'var(--success-text)';
+        document.getElementById('modal-icon').innerText = isError ? '❌' : '✅';
+        
+        if(title === 'Petunjuk') {
+            document.getElementById('modal-title').style.color = 'var(--text-dark)';
+            document.getElementById('modal-icon').innerText = '💡';
+        }
+        
+        document.getElementById('modal-text').innerHTML = text;
+        const btn = document.getElementById('modal-btn');
+        btn.innerText = btnText;
+        btn.onclick = () => {
+            document.getElementById('modal').style.display = 'none';
+            if(callback) callback();
+        };
+    }
+
+    function showHint(text) {
+        showModal('Petunjuk', `<div class="hint-box">${text}</div>`, false, "Tutup");
+    }
+
+    function startGame() {
+        showScreen('screen-map');
+        updateHUD();
+    }
+
+    function startMission(m) {
+        if(document.getElementById(`btn-m${m}`).classList.contains('locked')) return;
+        currentMission = m;
+        attempts = 0; 
+        
+        if(m === 1) initMission1();
+        if(m === 2) initMission2();
+        if(m === 3) initMission3();
+        if(m === 4) initMission4();
+        
+        showScreen(`screen-m${m}`);
+    }
+
+    function completeMission(badgeIcon, badgeName) {
+        if (!badges.find(b => b.name === badgeName)) {
+            badges.push({icon: badgeIcon, name: badgeName});
+            balance = Math.min(100, balance + 15);
+        }
+        
+        let nextM = currentMission + 1;
+        if(nextM <= 4) {
+            let btn = document.getElementById(`btn-m${nextM}`);
+            btn.classList.remove('locked');
+            btn.disabled = false;
+            document.getElementById(`status-m${nextM}`).innerText = '▶️';
+            document.getElementById(`status-m${currentMission}`).innerText = '✅';
+        }
+
+        document.getElementById(`status-m${currentMission}`).innerText = '✅';
+        updateHUD();
+        if (currentMission === 4) finishGame();
+        else showScreen('screen-map');
+    }
+
+    function handleItemTap(elem, clickEvent) {
+        clickEvent.stopPropagation();
+        if (selectedItemElem === elem) {
+            elem.classList.remove('selected');
+            selectedItemElem = null;
+            removeHighlights();
+            return;
+        }
+        if (selectedItemElem) selectedItemElem.classList.remove('selected');
+        
+        selectedItemElem = elem;
+        elem.classList.add('selected');
+        highlightValidZones(elem.dataset.mission);
+
+    }
+
+    function handleZoneTap(zoneId) {
+        if (!selectedItemElem) return;
+        const zone = document.getElementById(zoneId);
+        
+        if(selectedItemElem.dataset.mission === 'm1' && !zoneId.startsWith('zone') && zoneId !== 'm1-pool') return;
+        if(selectedItemElem.dataset.mission === 'm2' && !zoneId.startsWith('m2-') && zoneId !== 'm2-pool') return;
+
+        if (zone.classList.contains('chain-slot')) {
+            Array.from(zone.children).forEach(card => {
+                document.getElementById('m2-pool').appendChild(card);
+            });
+        }
+        zone.appendChild(selectedItemElem);
+        selectedItemElem.classList.remove('selected');
+        selectedItemElem = null;
+        removeHighlights();
+    }
+
+    function highlightValidZones(mission) {
+        if(mission === 'm1') {
+            document.getElementById('zone-biotik').classList.add('highlight');
+            document.getElementById('zone-abiotik').classList.add('highlight');
+            document.getElementById('m1-pool').classList.add('highlight');
+        } else if (mission === 'm2') {
+            document.querySelectorAll('.chain-slot').forEach(el => el.classList.add('highlight'));
+            document.getElementById('m2-pool').classList.add('highlight');
+        }
+    }
+
+    function removeHighlights() {
+        document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+    }
+
+    function initMission1() {
+        const pool = document.getElementById('m1-pool');
+        pool.innerHTML = '';
+        document.querySelectorAll('#zone-biotik .draggable-item, #zone-abiotik .draggable-item').forEach(el => el.remove());
+        
+        let items = [...M1_ITEMS].sort(() => Math.random() - 0.5);
+        items.forEach(item => {
+            let div = document.createElement('div');
+            div.className = 'draggable-item';
+            div.innerText = item.name;
+            div.dataset.type = item.type;
+            div.dataset.mission = 'm1';
+            div.onclick = function(e) { handleItemTap(this, e); };
+            pool.appendChild(div);
+        });
+    }
+
+    function checkMission1() {
+        const poolItems = document.querySelectorAll('#m1-pool .draggable-item');
+        if(poolItems.length > 0) {
+            showModal("Belum Selesai", "Pindahkan SEMUA kartu ke dalam peti sebelum memeriksa jawaban.", true, "Tutup");
+            return;
+        }
+
+        attempts++;
+        let correctCount = 0;
+        document.querySelectorAll('#zone-biotik .draggable-item').forEach(el => { if(el.dataset.type === 'Biotik') correctCount++; });
+        document.querySelectorAll('#zone-abiotik .draggable-item').forEach(el => { if(el.dataset.type === 'Abiotik') correctCount++; });
+
+        if(correctCount >= 10) {
+            let pts = (attempts === 1) ? 15 : 10;
+            points += pts;
+            showModal("Hebat!", `Tepat! Makhluk hidup (Biotik) dan benda pendukung (Abiotik) telah terpisah dengan benar. (+ ${pts} Poin)`, false, "Kembali ke Peta", () => {
+                completeMission('🔎', 'Detektif Ekosistem');
+            });
+        } else {
+            if(attempts >= 3) {
+                let expl = "Kamu sudah mencoba 3 kali. Inilah jawaban yang benar:<br><br><b>BIOTIK</b>: Padi, Belalang, Tikus, Katak, Ular, Elang, Cacing, Jamur.<br><b>ABIOTIK</b>: Air, Tanah, Sinar Matahari, Udara.<br><br>Mari ulangi tantangan ini agar makin paham.";
+                showModal("Penjelasan Lengkap", expl, true, "Coba Lagi", () => { attempts = 0; initMission1(); });
+            } else {
+                showModal("Belum Tepat", "Belum tepat. Apakah benda yang kamu letakkan di peti Biotik itu bisa bernapas dan bertumbuh? Coba periksa kembali.", true, "Coba Lagi");
+            }
+        }
+    }
+
+    function initMission2() {
+        const pool = document.getElementById('m2-pool');
+        pool.innerHTML = '';
+        document.querySelectorAll('.chain-slot').forEach(slot => slot.innerHTML = '');
+        
+        let items = [...M2_ITEMS].sort(() => Math.random() - 0.5);
+        items.forEach(item => {
+            let div = document.createElement('div');
+            div.className = 'draggable-item';
+            div.innerText = item.name;
+            div.dataset.name = item.name;
+            div.dataset.mission = 'm2';
+            div.onclick = function(e) { handleItemTap(this, e); };
+            pool.appendChild(div);
+        });
+    }
+
+    function checkMission2() {
+        let c1 = [], c2 = [], c3 = [];
+        for(let i=1; i<=5; i++) { let slot = document.getElementById(`m2-c1-${i}`); if(slot.children.length > 0) c1.push(slot.children[0].dataset.name); }
+        for(let i=1; i<=4; i++) { let slot = document.getElementById(`m2-c2-${i}`); if(slot.children.length > 0) c2.push(slot.children[0].dataset.name); }
+        for(let i=1; i<=4; i++) { let slot = document.getElementById(`m2-c3-${i}`); if(slot.children.length > 0) c3.push(slot.children[0].dataset.name); }
+
+        if(c1.length < 5 || c2.length < 4 || c3.length < 4) {
+            showModal("Belum Selesai", "Isi semua kotak kosong pada rantai makanan terlebih dahulu.", true, "Tutup"); return;
+        }
+
+        attempts++;
+        const isC1 = JSON.stringify(c1) === JSON.stringify(M2_EXPECTED[0]);
+        // Boleh tertukar antara baris 2 dan 3 karena strukturnya sama panjangnya
+        const isC2 = JSON.stringify(c2) === JSON.stringify(M2_EXPECTED[1]) || JSON.stringify(c2) === JSON.stringify(M2_EXPECTED[2]);
+        const isC3 = (JSON.stringify(c3) === JSON.stringify(M2_EXPECTED[2]) && JSON.stringify(c2) === JSON.stringify(M2_EXPECTED[1])) || 
+                     (JSON.stringify(c3) === JSON.stringify(M2_EXPECTED[1]) && JSON.stringify(c2) === JSON.stringify(M2_EXPECTED[2]));
+
+        if(isC1 && isC2 && isC3) {
+            let pts = (attempts === 1) ? 15 : 10;
+            points += pts;
+            showModal("Luar Biasa!", `Tepat! Tumbuhan pembuat makanan selalu berada di awal rantai. Aliran energi telah tersambung sempurna! (+ ${pts} Poin)`, false, "Kembali ke Peta", () => {
+                completeMission('🔗', 'Ahli Rantai Makanan');
+            });
+        } else {
+             if(attempts >= 3) {
+                let expl = "Urutan yang tepat adalah energi mengalir dari tumbuhan ke hewan pemakannya:<br>1. Padi -> Belalang -> Katak -> Ular -> Elang<br>2. Padi -> Tikus -> Ular -> Elang<br>3. Rumput -> Belalang -> Pipit -> Elang<br><br>Mari coba susun lagi dari awal.";
+                showModal("Penjelasan Lengkap", expl, true, "Coba Lagi", () => { attempts = 0; initMission2(); });
+            } else {
+                showModal("Belum Tepat", "Belum tepat. Coba periksa urutannya, produsen (tumbuhan) dimakan hewan herbivora, lalu dimakan hewan karnivora.", true, "Coba Lagi");
+            }
+        }
+    }
+
+    function initMission3() {
+        currentM3Scenario = 0; m3CorrectCount = 0; attempts = 0;
+        loadM3Scenario();
+    }
+
+    function loadM3Scenario() {
+        const scen = M3_SCENARIOS[currentM3Scenario];
+        document.getElementById('m3-progress').innerText = `Skenario ${currentM3Scenario + 1} dari 4`;
+        document.getElementById('m3-scenario-title').innerText = scen.title;
+        document.getElementById('m3-scenario-desc').innerText = scen.desc;
+        
+        document.getElementById('label-cause').innerText = scen.causeLabel;
+        document.getElementById('label-effect1').innerText = scen.effect1Label;
+        
+        if(scen.effect2Label) {
+            document.getElementById('wrapper-effect2').style.visibility = 'visible';
+            document.getElementById('label-effect2').innerText = scen.effect2Label;
+        } else {
+            document.getElementById('wrapper-effect2').style.visibility = 'hidden';
+        }
+
+        document.getElementById('m3-slider').value = 50;
+        updateChart(); 
+
+        const optsDiv = document.getElementById('m3-options');
+        optsDiv.innerHTML = '';
+        scen.options.forEach((opt, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                btn.dataset.selectedIdx = idx;
+            };
+            optsDiv.appendChild(btn);
+        });
+    }
+
+    function updateChart() {
+        const val = parseInt(document.getElementById('m3-slider').value);
+        const scen = M3_SCENARIOS[currentM3Scenario];
+        
+        document.getElementById('bar-cause').style.height = val + '%';
+
+        let eff1 = scen.relation1 === 'inverse' ? (100 - val) : val;
+        eff1 = Math.max(10, Math.min(90, eff1));
+        document.getElementById('bar-effect1').style.height = eff1 + '%';
+
+        if(scen.effect2Label) {
+            let eff2 = scen.relation2 === 'inverse' ? (100 - eff1) : eff1;
+            if(scen.relation2 === 'direct') eff2 = eff1; 
+             eff2 = Math.max(10, Math.min(90, eff2));
+            document.getElementById('bar-effect2').style.height = eff2 + '%';
+        }
+    }
+    
+    function showHintM3() {
+        const scen = M3_SCENARIOS[currentM3Scenario];
+        showHint(scen.hint);
+    }
+
+    function checkMission3() {
+        const selectedBtn = document.querySelector('.option-btn.selected');
+        if(!selectedBtn) { showModal("Pilih Jawaban", "Silakan pilih salah satu prediksi terlebih dahulu.", true, "Tutup"); return; }
+
+        const selectedIdx = parseInt(selectedBtn.dataset.selectedIdx);
+        const scen = M3_SCENARIOS[currentM3Scenario];
+        attempts++;
+
+        if(selectedIdx === scen.correct) {
+            let pts = (attempts === 1) ? 10 : 5;
+            points += pts;
+            m3CorrectCount++;
+            showModal("Benar!", scen.feedbackC + `<br><br>(+ ${pts} Poin)`, false, "Lanjut", nextM3Scenario);
+        } else {
+            if (attempts >= 3) {
+                 showModal("Penjelasan", `Kesempatan habis. Jawaban yang tepat adalah nomor ${scen.correct + 1}.<br><br>${scen.feedbackC}`, true, "Lanjut", nextM3Scenario);
+            } else {
+                 showModal("Belum Tepat", scen.feedbackW, true, "Coba Lagi");
+            }
+        }
+    }
+
+    function nextM3Scenario() {
+        currentM3Scenario++;
+        attempts = 0;
+        
+        if(currentM3Scenario < 4) {
+            loadM3Scenario();
+        } else {
+            if (m3CorrectCount >= 3) {
+                showModal("Misi 3 Selesai!", `Hebat! Kamu berhasil memprediksi ${m3CorrectCount} dari 4 skenario dengan tepat!`, false, "Kembali ke Peta", () => {
+                    completeMission('🔮', 'Peramal Ekosistem');
+                });
+            } else {
+                showModal("Belum Lulus", `Kamu menjawab benar ${m3CorrectCount} skenario (Butuh minimal 3). Jangan menyerah, mari kita ulangi Misi 3!`, true, "Ulangi Misi 3", () => {
+                    initMission3();
+                });
+            }
+        }
+    }
+
+    function initMission4() {
+        document.getElementById('m4-part1').style.display = 'block';
+        document.getElementById('m4-part2').style.display = 'none';
+        
+        const grid = document.getElementById('m4-actions');
+        grid.innerHTML = '';
+        
+        let acts = [...M4_ACTIONS].sort(() => Math.random() - 0.5);
+        acts.forEach(act => {
+            let div = document.createElement('div');
+            div.className = 'action-item';
+            div.dataset.correct = act.correct;
+            
+            let cb = document.createElement('input');
+            cb.type = 'checkbox';
+            
+            let span = document.createElement('span');
+            span.innerText = act.text;
+            
+            div.appendChild(cb);
+            div.appendChild(span);
+            
+            div.onclick = function() {
+                this.classList.toggle('selected');
+                let checkbox = this.querySelector('input');
+                checkbox.checked = !checkbox.checked;
+            };
+            
+            grid.appendChild(div);
+        });
+    }
+
+    function checkMission4Part1() {
+        const selected = document.querySelectorAll('.action-item.selected');
+        if(selected.length !== 3) { showModal("Perhatian", "Pilih tepat TIGA (3) tindakan.", true, "Tutup"); return; }
+
+        attempts++;
+        let allCorrect = true;
+        selected.forEach(el => { if(el.dataset.correct === "false") allCorrect = false; });
+
+        if(allCorrect) {
+            let pts = (attempts === 1) ? 15 : 10;
+            points += pts;
+            showModal("Tepat Sekali!", `Tindakanmu membantu memulihkan alam tanpa membahayakan komponen lain. (+ ${pts} Poin)<br><br>Sekarang, mari jawab satu pertanyaan terakhir.`, false, "Lanjut", showMission4Part2);
+        } else {
+             if (attempts >= 3) {
+                let expl = "Tindakan yang tepat adalah:<br>1. Melindungi ular & burung hantu.<br>2. Menjaga saluran air bersih.<br>3. Menanam kembali pohon.<br>4. Mengurangi pestisida.<br><br>Tindakan lainnya adalah pengecoh yang justru merusak keseimbangan. Mari ulangi!";
+                showModal("Penjelasan Lengkap", expl, true, "Coba Lagi", () => { attempts = 0; initMission4(); });
+            } else {
+                showModal("Ada yang keliru", "Belum tepat. Terdapat tindakan yang kamu pilih yang justru dapat membahayakan ekosistem (seperti racun atau penebangan). Coba pilih lagi.", true, "Coba Lagi");
+            }
+        }
+    }
+
+    function showMission4Part2() {
+        document.getElementById('m4-part1').style.display = 'none';
+        document.getElementById('m4-part2').style.display = 'block';
+        attempts = 0;
+
+        const reasons = [
+            { text: "Mereka adalah pemangsa alami yang bertugas mengendalikan jumlah hama tikus.", correct: true },
+            { text: "Mereka akan memakan padi yang rusak sehingga sawah terlihat bersih.", correct: false },
+            { text: "Mereka bisa ditangkap hidup-hidup dan dijual oleh petani.", correct: false }
+        ];
+        
+        const optsDiv = document.getElementById('m4-reasons');
+        optsDiv.innerHTML = '';
+        reasons.sort(() => Math.random() - 0.5).forEach((r) => {
+            let btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = r.text;
+            btn.onclick = () => {
+                document.querySelectorAll('#m4-reasons .option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                btn.dataset.correct = r.correct;
+            };
+            optsDiv.appendChild(btn);
+        });
+    }
+
+    function checkMission4Part2() {
+        const selectedBtn = document.querySelector('#m4-reasons .option-btn.selected');
+        if(!selectedBtn) { showModal("Pilih Jawaban", "Pilih alasan yang paling tepat.", true, "Tutup"); return; }
+
+        attempts++;
+        if(selectedBtn.dataset.correct === "true") {
+            let pts = (attempts === 1) ? 10 : 5;
+            points += pts;
+            showModal("Jawaban Sempurna!", `Tepat! Ular dan burung hantu bertindak sebagai agen pengendali hama alami. (+ ${pts} Poin)`, false, "Selesaikan Game", () => {
+                completeMission('🛡️', 'Penjaga Ekosistem Sawah');
+            });
+        } else {
+             if (attempts >= 3) {
+                showModal("Penjelasan", "Ular dan burung hantu adalah hewan karnivora yang memakan tikus, sehingga mereka adalah pengendali populasi hama secara alami (Pemangsa Alami).", true, "Selesaikan Game", () => {
+                     completeMission('🛡️', 'Penjaga Ekosistem Sawah');
+                });
+            } else {
+                showModal("Belum Tepat", "Belum tepat. Coba ingat, apa hubungan antara ular/burung hantu dengan hewan perusak padi seperti tikus?", true, "Coba Lagi");
+            }
+        }
+    }
+
+    function finishGame() {
+        showScreen('screen-end');
+        document.getElementById('hud').style.display = 'none'; 
+        
+        document.getElementById('final-score').innerText = points;
+        const badgeDiv = document.getElementById('final-badges');
+        badgeDiv.innerHTML = badges.map(b => `
+            <div class="badge-card">
+                <span>${b.icon}</span>
+                <small style="font-weight: bold; color: var(--primary-dark);">${b.name}</small>
+            </div>
+        `).join('');
+    }
+
+    // Memulai dari layar awal
+    showScreen('screen-intro');
+</script>
+
+</body>
+</html>
